@@ -7,5 +7,6 @@ import { TariffsService } from './tariffs.service';
   imports: [DatabaseModule],
   controllers: [TariffsController],
   providers: [TariffsService],
+  exports: [TariffsService],
 })
 export class TariffsModule {}

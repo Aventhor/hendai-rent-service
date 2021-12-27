@@ -4,14 +4,16 @@ import { AppService } from './app.service';
 import { TariffsModule } from './tariffs/tariffs.module';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
-import { RentModule } from './rent/rent.module';
+import { TariffRulesModule } from './tariff-rules/tariff-rules.module';
+import { RentSessionsModule } from './rent-sessions/rent-sessions.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TariffsModule,
     DatabaseModule,
-    RentModule,
+    TariffRulesModule,
+    RentSessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
