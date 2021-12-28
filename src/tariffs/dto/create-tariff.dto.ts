@@ -10,7 +10,7 @@ class CreateTariffDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
+  @Min(0)
   price_per_day: number;
 }
 

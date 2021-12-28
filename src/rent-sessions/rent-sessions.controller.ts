@@ -1,58 +1,95 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Post,
-  Query,
-} from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
-import { TariffRulesService } from 'src/tariff-rules/tariff-rules.service';
-import { TariffsService } from 'src/tariffs/tariffs.service';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
 import CreateRentSessionDto from './dto/create-rent-session.dto';
 import { RentSessionsService } from './rent-sessions.service';
-import RentSession from './RentSession.model';
+import { ErrorType } from './types';
+import { ErrorType as TariffsErrorType } from '../tariffs/types';
+import { plainToInstance } from 'class-transformer';
+import RentSessionDto from './dto/rent-session.dto';
 
 @Controller('rent-sessions')
 export class RentSessionsController {
-  constructor(
-    private readonly rentSessionsService: RentSessionsService,
-    private readonly tariffsService: TariffsService,
-    private readonly tariffRulesService: TariffRulesService,
-  ) {}
+  constructor(private readonly rentSessionsService: RentSessionsService) {}
 
   @Get('')
-  @ApiOkResponse({ type: RentSession, isArray: true })
+  @ApiOkResponse({ type: RentSessionDto, isArray: true })
   async getAll() {
-    return await this.rentSessionsService.getAll();
+    const sessions = await this.rentSessionsService.getAll();
+    return plainToInstance(RentSessionDto, sessions);
   }
 
   @Get('/cost')
-  @ApiOkResponse({ type: 'number' })
+  @ApiOkResponse({ type: Number })
+  @ApiNotFoundResponse()
   async getCost(
     @Query('tariff_id', ParseIntPipe) tariffId: number,
-    @Query('period', ParseIntPipe) period: number,
+    @Query('start_date') startDate: string,
+    @Query('end_date') endDate: string,
   ) {
-    const tariff = await this.tariffsService.getOne(tariffId);
-    const tariffRules = await this.tariffRulesService.getByTariffIds(tariffId);
-    return await this.tariffsService.calcCost(tariff, tariffRules, period);
+    try {
+      return await this.rentSessionsService.getCost(tariffId, new Date(startDate), new Date(endDate));
+    } catch (err) {
+      switch (err.message) {
+        case TariffsErrorType.TARIFF_NOT_FOUND: {
+          throw new HttpException('Тариф не найден', HttpStatus.NOT_FOUND);
+        }
+        case ErrorType.START_DATE_IS_AFTER: {
+          throw new HttpException('Дата начала аренды не может быть позже даты окончания', HttpStatus.BAD_REQUEST);
+        }
+        default: {
+          throw new HttpException('Внутренная ошибка', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+      }
+    }
   }
 
   @Get(':id')
-  @ApiOkResponse({ type: RentSession })
+  @ApiOkResponse({ type: RentSessionDto })
+  @ApiNotFoundResponse()
   async getOne(@Param('id', ParseIntPipe) id: number) {
-    const session = await this.rentSessionsService.getOne(id);
-    if (!session)
-      throw new HttpException('Rent session not found', HttpStatus.NOT_FOUND);
-    return session;
+    try {
+      const session = await this.rentSessionsService.getOne(id);
+      return plainToInstance(RentSessionDto, session);
+    } catch (err) {
+      switch (err.message) {
+        case ErrorType.RENT_SESSION_NOT_FOUND: {
+          throw new HttpException('Сессия аренды не найдена', HttpStatus.NOT_FOUND);
+        }
+      }
+    }
   }
 
   @Post('')
-  @ApiCreatedResponse({ type: RentSession })
+  @ApiCreatedResponse({ type: RentSessionDto })
+  @ApiNotFoundResponse()
   async create(@Body() createRentSessionDto: CreateRentSessionDto) {
-    return await this.rentSessionsService.create(createRentSessionDto);
+    try {
+      const session = await this.rentSessionsService.create(createRentSessionDto);
+      return plainToInstance(RentSessionDto, session);
+    } catch (err) {
+      switch (err.message) {
+        case ErrorType.CAR_NOT_FOUND: {
+          throw new HttpException('Выбранная машина уже забронирована на данный период', HttpStatus.BAD_REQUEST);
+        }
+        case ErrorType.RENT_SESSION_WEEKEND: {
+          throw new HttpException(
+            'Дата начала и окончания бронирования не может выпадать на выходной день',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        case ErrorType.RENT_MIN_SESSION_INTERVAL: {
+          throw new HttpException('Между сеансами бронирования должно пройти не менее 3х дней', HttpStatus.BAD_REQUEST);
+        }
+        case ErrorType.RENT_SESSION_MAX_PERIOD: {
+          throw new HttpException('Выбранный период аренды превышает максимально доступный', HttpStatus.BAD_REQUEST);
+        }
+        case ErrorType.START_DATE_IS_AFTER: {
+          throw new HttpException('Дата начала аренды не может быть позже даты окончания', HttpStatus.BAD_REQUEST);
+        }
+        default: {
+          throw new HttpException('Внутренная ошибка', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+      }
+    }
   }
 }

@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { TariffRulesModule } from './tariff-rules/tariff-rules.module';
 import { RentSessionsModule } from './rent-sessions/rent-sessions.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RentSessionsModule } from './rent-sessions/rent-sessions.module';
     DatabaseModule,
     TariffRulesModule,
     RentSessionsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
