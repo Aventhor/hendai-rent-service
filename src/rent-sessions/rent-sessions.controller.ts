@@ -68,7 +68,7 @@ export class RentSessionsController {
       return plainToInstance(RentSessionDto, session);
     } catch (err) {
       switch (err.message) {
-        case ErrorType.CAR_NOT_FOUND: {
+        case ErrorType.CAR_IS_BUSY: {
           throw new HttpException('Выбранная машина уже забронирована на данный период', HttpStatus.BAD_REQUEST);
         }
         case ErrorType.RENT_SESSION_WEEKEND: {

@@ -45,16 +45,19 @@ export class RentSessionsService {
       'SELECT * FROM rent_sessions WHERE car_id=$1 ORDER BY id ASC LIMIT 1',
       [carId],
     );
+    if (!sessions.length) {
+      return true;
+    }
     const session = plainToInstance(RentSession, sessions[0]);
     return this.utilsService.getDaysBetweenDates(startDate, session.endDate) >= 3;
   }
 
   async getCost(tariffId: number, startDate: Date, endDate: Date) {
-    const tariff = await this.tariffsService.getOne(tariffId);
-    const tariffRules = await this.tariffRulesService.getAllByTariffId(tariffId);
     if (this.utilsService.isAfter(startDate, endDate)) {
       throw new Error(ErrorType.START_DATE_IS_AFTER);
     }
+    const tariff = await this.tariffsService.getOne(tariffId);
+    const tariffRules = await this.tariffRulesService.getAllByTariffId(tariffId);
     const period = this.utilsService.getDaysBetweenDates(endDate, startDate);
     return this.calcCost(tariff, tariffRules, period);
   }
@@ -71,7 +74,7 @@ export class RentSessionsService {
     );
 
     if (!isCarAvailable) {
-      throw new Error(ErrorType.CAR_NOT_FOUND);
+      throw new Error(ErrorType.CAR_IS_BUSY);
     }
 
     const isSessionAvailable = await this.checkSessionAvailable(
