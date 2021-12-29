@@ -17,13 +17,13 @@ export class ReportsService {
     if (!reports.length) {
       throw new Error(ErrorType.CAR_NOT_FOUND);
     }
-    return plainToInstance(CarReportDto, reports[0]);
+    return reports[0];
   }
 
   async getCarsReport() {
     const reports = await this.databaseService.query(
       `SELECT car_id, sum(round((end_date - start_date) * 100 / 30::decimal, 2)) as workload_percentage FROM rent_sessions WHERE date_trunc('month',start_date) = date_trunc('month',CURRENT_DATE) GROUP BY car_id;`,
     );
-    return plainToInstance(CarReportDto, reports);
+    return reports;
   }
 }

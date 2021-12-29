@@ -1,5 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
 import CarReportDto from './dto/car-report.dto';
 import { ReportsService } from './reports.service';
 import { ErrorType } from './types';
@@ -11,7 +12,8 @@ export class ReportsController {
   @Get('cars')
   @ApiOkResponse({ type: CarReportDto, isArray: true })
   async getCarsReport() {
-    return await this.reportsService.getCarsReport();
+    const reports = await this.reportsService.getCarsReport();
+    return plainToInstance(CarReportDto, reports);
   }
 
   @Get('cars/:id')
@@ -19,7 +21,8 @@ export class ReportsController {
   @ApiNotFoundResponse()
   async getCarReportByCarId(@Param('id', ParseIntPipe) carId: number) {
     try {
-      return await this.reportsService.getCarReportByCarId(carId);
+      const report = await this.reportsService.getCarReportByCarId(carId);
+      return plainToInstance(CarReportDto, report);
     } catch (err) {
       switch (err.message) {
         case ErrorType.CAR_NOT_FOUND: {

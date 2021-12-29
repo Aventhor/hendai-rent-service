@@ -3,7 +3,8 @@ import { Expose, Type } from 'class-transformer';
 
 class CarReportDto {
   @ApiProperty()
-  car_id: number;
+  @Expose({ name: 'car_id' })
+  carId: number;
 
   @ApiProperty()
   @Expose({ name: 'workload_percentage' })
